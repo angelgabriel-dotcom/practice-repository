@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ascii Art Generator</title>
+    <style>
+        body {
+            background-image: ('ChatGPT Image Jun 30, 2026, 02_53_37 PM.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+            background-color: blue;
+            background-blend-mode: multiply;
+        }
+
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body{
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        h1{
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px #00ff00;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        input{
+            background-color: #0d0d0d;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 15px;
+            font-family: 1rem;
+            outline: none;
+            width: 300px;
+            margin-bottom: 20px;
+        }
+
+        input:focus{
+            box-shadow: 0 0 10px #00ff00;
+        }
+        select {
+    background-color: #0d0d0d;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 10px 15px;
+    font-family: monospace;
+    font-size: 1rem;
+    outline: none;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+select:focus {
+    box-shadow: 0 0 10px #00ff00;
+}
+button {
+    background-color: #0d0d0d;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 10px 25px;
+    font-family: monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+button:hover {
+    background-color: #00ff00;
+    color: #0d0d0d;
+    box-shadow: 0 0 15px #00ff00;
+}
+    </style>
+</head>
+<body>
+    <h1>Ascii Art Generator</h1>
+    <input type="text" id="text" placeholder="Enter your text here">
+    <select id="banner">
+        <option value="standard">standard</option>
+        <option value="shadow">shadow</option>
+        <option value="thinkertoy">thinkertoy</option>
+    </select>
+    <button id="generate">generate</button>
+    <pre id="result"></pre>
+
+    <script>
+        const button = document.getElementById("generate")
+        button.addEventListener("click", function() {
+            const text = document.getElementById("text").value
+            const banner = document.getElementById("banner").value
+            fetch("http://localhost:8080/ascii", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "text=" + text + "&banner=" + banner
+            })
+            .then(function(response) {
+                return response.json()
+            })
+            .then(function(data) {
+                document.getElementById("result").textContent = data.result
+            })
+        })
+    </script>
+</body>
+</html>
