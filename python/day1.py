@@ -1,8 +1,5 @@
-#name1 = "angel finix"
-#age = 22
-
-#print(f"my name is {name1}")
-#print(f"am {age} years old")
+import time
+from scanner import scan_id
 
 def greet(name, age): 
     if age >= 18:
@@ -23,17 +20,22 @@ def greet(name, age):
 
     while True:
         scan = input("Your ID in here:  ")
-        input(f"this is your ID Right? {scan}  ").lower()
+        scann = input(f"this is your ID Right? {scan}  ").lower()
+        
 
-        if scan == "yes":
-            print("okay")
+        if scann == "yes":
+            print("verified✅\n")
             break
-        elif scan == "no":
+        elif scann == "no":
             print("Okay retype you ID agin but be very careful this time")
+            continue
 
-    test = input("okay let's continue")
-
+    test = print("okay, wait a little please while i scan your ID\n")
+    scan_id(scan)
 name = input("Input Your Name:  ")
+if name == "":
+    print("fill in something please")
+    exit()
 print(f"hello {name}!\n")
 age = int(input(f"How Old Are You: {name}  "))
 greet(name, age)
