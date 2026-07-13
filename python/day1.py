@@ -1,41 +1,49 @@
 import time
 from scanner import scan_id
+from qr_scanner import generate_qr
+
+green = "\033[32m"
+bright_green =  "\033[102m"
+pink = "\033[36m"
+red = "\033[31m"
+yellow = "\033[33m"
+reset = "\033[0m"
 
 def greet(name, age): 
     if age >= 18:
-        print("An adult\n")
+        print(f"{yellow}An adult{reset}\n")
     else:
-        print("A minor\n")
-    print(f"Okay {name} You Said You Are {age} Years Old 🤣🤣 Funny Your Face Looks Young")
-    print("Okay let's move on\n")
+        print(f"{yellow}A minor{reset}\n")
+    print(f"{yellow}Okay let's move on{reset}\n")
     
-    answer = input("do you have your Id with you: (Yes/No)  ").lower()
+    answer = input(f"{green}do you have your Id with you: (Yes/No){reset}  ").lower()
     while True:
         if answer == "yes":
-            print("Okay present your ID please\n")
+            print(f"{yellow}Okay present your ID please{reset}\n")
             break
         elif answer == "no":
-            print("Sorry, you cannot procced without an ID")
+            print(f"{red}Sorry, you cannot procced without an ID{reset}")
             return
 
     while True:
-        scan = input("Your ID in here:  ")
-        scann = input(f"this is your ID Right? {scan}  ").lower()
+        scan = input(f"{green}Your ID in here:{reset}  ")
+        scann = input(f"{green}this is your ID Right?{reset} {scan}  ").lower()
         
 
         if scann == "yes":
-            print("verified✅\n")
+            print(f"{yellow}verified✅{reset}\n")
             break
         elif scann == "no":
-            print("Okay retype you ID agin but be very careful this time")
+            print(f"{pink}Okay retype you ID agin but be very careful this time{reset}")
             continue
 
-    test = print("okay, wait a little please while i scan your ID\n")
+    test = print(f"{pink}okay, wait a little please while i scan your ID{reset}\n")
     scan_id(scan)
-name = input("Input Your Name:  ")
+    generate_qr(scan)
+name = input(f"{green}Input Your Name:{reset}  ")
 if name == "":
-    print("fill in something please")
+    print(f"{red}fill in something please{reset}")
     exit()
-print(f"hello {name}!\n")
-age = int(input(f"How Old Are You: {name}  "))
+print(f"{yellow}hello{reset} {name}!\n")
+age = int(input(f"{green}How Old Are You:{reset} {name}  "))
 greet(name, age)
