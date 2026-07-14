@@ -1,12 +1,14 @@
 import time
 from scanner import scan_id
 from qr_scanner import generate_qr
+from qr_scanner import hash_Id
+from record import record_user
 
-green = "\033[32m"
-bright_green =  "\033[102m"
-pink = "\033[36m"
-red = "\033[31m"
-yellow = "\033[33m"
+green = "\033[1;4;32m"
+bright_green =  "\033[1;4;102m"
+pink = "\033[1;4;36m"
+red = "\033[1;4;31m"
+yellow = "\033[1;4;33m"
 reset = "\033[0m"
 
 def greet(name, age): 
@@ -26,10 +28,12 @@ def greet(name, age):
             return
 
     while True:
-        scan = input(f"{green}Your ID in here:{reset}  ")
-        scann = input(f"{green}this is your ID Right?{reset} {scan}  ").lower()
-        
+        scan = input(f"{green}Provide Your ID in here:{reset}  ")
+        if scan == "":
+           print(f"{red}becareful please ID is empty fill in something{reset}")
+           continue
 
+        scann = input(f"{green}this is your ID Right?{reset} {scan}  ").lower()
         if scann == "yes":
             print(f"{yellow}verified✅{reset}\n")
             break
@@ -39,11 +43,21 @@ def greet(name, age):
 
     test = print(f"{pink}okay, wait a little please while i scan your ID{reset}\n")
     scan_id(scan)
+    hashed = hash_Id(scan)
+    print(f"{green}hased{reset}{hashed}")
     generate_qr(scan)
-name = input(f"{green}Input Your Name:{reset}  ")
-if name == "":
-    print(f"{red}fill in something please{reset}")
-    exit()
-print(f"{yellow}hello{reset} {name}!\n")
-age = int(input(f"{green}How Old Are You:{reset} {name}  "))
-greet(name, age)
+    record_user(name,scan,hashed)
+while True:
+    name = input(f"{green}Input Your Name:{reset}  ")
+    if name == "":
+     print(f"{red}it can't be empty fill in something!{reset}")
+     continue
+    print(f"{yellow}hello{reset} {name}!\n")
+    age = int(input(f"{green}How Old Are You:{reset} {name}  "))
+    greet(name, age)
+    note = input(f"{green}is they any other user for this program?{reset}  ").lower()
+    if note == "yes":
+       continue
+    elif note == "no":
+       print(f"{pink}okay Good Day😜{reset}")
+       exit()
