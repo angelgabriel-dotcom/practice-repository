@@ -23,9 +23,9 @@ def music_player():
       info = ydl.extract_info(f"ytsearch1:{ask}", download=True)
       filename = ydl.prepare_filename(info['entries'][0])
 
-   print(f"{green}Download Complete! Now Playing...{reset}")
+   print(f"{green}Download Complete! Now Playing {ask}...{reset}")
    playsound(filename)
-   print(f"{green}Now playing: {ask} 🎵{reset}")
+   print(f"{green}Done Playing: {ask} I Hope You Enjoyed The 🎵{reset}")
 
 def music_menu():
    options = print(f"""{green}1, register
