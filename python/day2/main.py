@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import yt_dlp
 from fastapi.middleware.cors import CORSMiddleware
+import httpx
 
 
 app = FastAPI()
@@ -47,3 +48,24 @@ def search(song: str):
         info = ydl.extract_info(f"ytsearch1:{song}", download=True)
         filename = ydl.prepare_filename(info['entries'][0])
     return {"message": f"Downloaded {song}", "filename": filename}
+from fastapi.responses import FileResponse
+
+@app.get("/stream")
+def stream(song: str):
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': f'{song}.%(ext)s',
+        'quiet': True,
+        'js_runtimes': {'deno': {'path': '/home/student/.deno/bin/deno'}},
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(f"ytsearch1:{song}", download=True)
+        filename = ydl.prepare_filename(info['entries'][0])
+    
+    return FileResponse(filename, media_type="audio/webm")
+
+@app.get("/artists")
+async def get_artists():
+    async with httpx.AsyncClient() as client:
+        res = await client.get("https://groupietrackers.herokuapp.com/api/artists")
+        return res.json()
