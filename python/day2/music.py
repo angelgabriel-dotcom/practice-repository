@@ -1,7 +1,7 @@
 from auth import user_details
 from auth import login
 import yt_dlp
-import pygame
+from playsound import playsound
 
 green  = "\033[1;4;32m"
 yellow = "\033[1;4;33m"
@@ -14,24 +14,18 @@ def music_player():
    
    ydl_opts = {
       'format': 'bestaudio/best',
-      'outtmpl': f'{ask}.mp3',
+      'outtmpl': f'{ask}.%(ext)s',
       'quiet': True,
       'js_runtimes': {'deno': {'path': '/home/student/.deno/bin/deno'}},
    }
 
    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-      ydl.download([f"ytsearch1:{ask}"])
+      info = ydl.extract_info(f"ytsearch1:{ask}", download=True)
+      filename = ydl.prepare_filename(info['entries'][0])
 
    print(f"{green}Download Complete! Now Playing...{reset}")
-   
-   pygame.mixer.init()
-   pygame.mixer.music.load(f"{ask}.mp3")
-   pygame.mixer.music.play()
+   playsound(filename)
    print(f"{green}Now playing: {ask} 🎵{reset}")
-
-   while pygame.mixer.music.get_busy():
-      pygame.time.Clock().tick(10)
-
 
 def music_menu():
    options = print(f"""{green}1, register
