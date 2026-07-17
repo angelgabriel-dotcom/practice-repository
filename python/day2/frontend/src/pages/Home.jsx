@@ -47,8 +47,27 @@ export default function Home() {
           <div className="cards-row">
             {filtered.map(artist => (
               <div key={artist.id} className="artist-card"
-                onClick={() => navigate("/player", { state: { artist } })}>
+                onClick={() => navigate("/player", { state: { artist } })}
+                style={{ position: "relative" }}
+                onMouseEnter={e => e.currentTarget.querySelector('.play-btn').style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.querySelector('.play-btn').style.opacity = 0}
+              >
                 <img src={artist.image} alt={artist.name} />
+                <div className="play-btn" style={{
+                  position: "absolute",
+                  bottom: "70px",
+                  right: "16px",
+                  width: "48px",
+                  height: "48px",
+                  background: "#1db954",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: 0,
+                  transition: "opacity 0.2s",
+                  fontSize: "20px"
+                }}>▶</div>
                 <h3>{artist.name}</h3>
                 <p>Artist</p>
               </div>
@@ -70,6 +89,7 @@ export default function Home() {
             ))}
           </div>
         </div>
+
       </div>
     </div>
   )

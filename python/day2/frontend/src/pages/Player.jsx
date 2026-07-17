@@ -1,13 +1,16 @@
 import { useLocation, useNavigate } from "react-router-dom"
 import { useState, useRef } from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
+import { useMusic } from "../music_context"
+
 
 export default function Player() {
   const { state } = useLocation()
   const artist = state?.artist
   const navigate = useNavigate()
   const [song, setSong] = useState("")
-  const [audioUrl, setAudioUrl] = useState("")
+const { setCurrentArtist, setAudioUrl, audioUrl } = useMusic()
+  
 
   const x = useMotionValue(0)
   const y = useMotionValue(0)
@@ -20,9 +23,11 @@ export default function Player() {
     y.set(e.clientY - rect.top - rect.height / 2)
   }
 
-  const handleSearch = () => {
-    setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${song}`)
-  }
+
+const handleSearch = () => {
+  setCurrentArtist(artist)
+  setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${song}`)
+}
 
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px" }}>
@@ -54,8 +59,6 @@ export default function Player() {
  />
         <button onClick={handleSearch} style={{ padding: "12px 20px", background: "#00ff64", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>Play</button>
       </div>
-
-      {audioUrl && <audio controls autoPlay src={audioUrl} style={{ width: "400px" }} />}
     </div>
   )
 }
