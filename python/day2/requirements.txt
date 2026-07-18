@@ -8,6 +8,7 @@ bcrypt==3.2.2
 blinker==1.7.0
 Brlapi==0.8.5
 certifi==2023.11.17
+cffi==2.1.0
 chardet==5.2.0
 click==8.1.6
 cloud-init==25.1.4
@@ -52,6 +53,7 @@ pillow==10.2.0
 playsound==1.2.2
 ptyprocess==0.7.0
 pycairo==1.25.1
+pycparser==3.0
 pycups==2.0.1
 pydantic==2.13.4
 pydantic_core==2.46.4
