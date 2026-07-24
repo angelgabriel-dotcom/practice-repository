@@ -28,7 +28,7 @@ export default function Login() {
       <input placeholder="Password" type="password" onChange={e => setPassword(e.target.value)} />
       <button onClick={handleLogin}>Login</button>
       <p>{message}</p>
-      <p>Don't have an account? <span onClick={() => navigate("/register")} style={{color: "#00ff64", cursor: "pointer"}}>Register</span></p>
+      <p style={{ marginTop: "16px" }}>Don't have an account? <span onClick={() => navigate("/register")} style={{ color: "#1db954", cursor: "pointer" }}>Register</span></p>
     </div>
   )
 }

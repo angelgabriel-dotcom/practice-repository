@@ -69,3 +69,14 @@ async def get_artists():
     async with httpx.AsyncClient() as client:
         res = await client.get("https://groupietrackers.herokuapp.com/api/artists")
         return res.json()
+@app.get("/songs")
+async def get_songs(artist: str):
+    ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'js_runtimes': {'deno': {'path': '/home/student/.deno/bin/deno'}},
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(f"ytsearch10:{artist}", download=False)
+        songs = [{'title': e['title'], 'duration': e.get('duration', 0)} for e in info['entries']]
+    return {"songs": songs}

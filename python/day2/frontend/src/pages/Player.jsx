@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect} from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
 import { useMusic } from "../music_context"
 
@@ -9,11 +9,19 @@ export default function Player() {
   const navigate = useNavigate()
   const { setCurrentArtist, setAudioUrl } = useMusic()
   const [song, setSong] = useState("")
+  const [songs, setSongs] = useState([])
+
+  useEffect(() => {
+  fetch(`http://localhost:8000/songs?artist=${artist?.name}`)
+    .then(res => res.json())
+    .then(data => setSongs(data.songs))
+}, [])
 
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const rotateX = useTransform(y, [-100, 100], [15, -15])
   const rotateY = useTransform(x, [-100, 100], [-15, 15])
+  
 
   const handleMouse = (e) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -25,14 +33,8 @@ export default function Player() {
     setCurrentArtist(artist)
     setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${songName}`)
   }
+  
 
-  const songs = [
-    `Best Hit`,
-    `Top Song`,
-    `Popular Track`,
-    `Famous Song`,
-    `Classic`,
-  ]
 
   return (
     <div style={{ background: "#121212", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -46,9 +48,11 @@ export default function Player() {
         position: "relative"
       }}>
         <button onClick={() => navigate("/home")} style={{
-          position: "absolute", top: "20px", left: "20px",
-          background: "transparent", color: "#fff", border: "none",
-          fontSize: "24px", cursor: "pointer", width: "auto", padding: "8px"
+          position: "absolute", top: "0px", left: "30px",
+          background: "rgba(0,0,0,0.5)", color: "#fff", border: "none",
+          fontSize: "18px", cursor: "pointer", width: "auto", padding: "8px 16px",
+          borderRadius: "24px", backdropFilter: "blur(10px)", display: "flex", alignItems: "center",
+          gap: "8px"
         }}>←</button>
 
         <motion.div
@@ -88,19 +92,19 @@ export default function Player() {
           <span style={{ color: "#b3b3b3", width: "40px" }}>#</span>
           <span style={{ color: "#b3b3b3", fontSize: "13px" }}>Title</span>
         </div>
-        {songs.map((s, i) => (
-          <div key={i} onClick={() => handlePlay(`${artist?.name} ${s}`)}
-            style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderRadius: "4px", cursor: "pointer", gap: "16px" }}
-            onMouseEnter={e => e.currentTarget.style.background = "#ffffff1a"}
-            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-          >
-            <span style={{ color: "#b3b3b3", width: "24px", fontSize: "14px" }}>{i + 1}</span>
-            <div>
-              <p style={{ color: "#fff", fontSize: "15px", fontWeight: "500" }}>{artist?.name} - {s}</p>
-              <p style={{ color: "#b3b3b3", fontSize: "13px" }}>{artist?.name}</p>
-            </div>
-          </div>
-        ))}
+      {songs.map((s, i) => (
+      <div key={i} onClick={() => handlePlay(s.title)}
+      style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderRadius: "4px", cursor: "pointer", gap: "16px" }}
+        onMouseEnter={e => e.currentTarget.style.background = "#ffffff1a"}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+       >
+       <span style={{ color: "#b3b3b3", width: "24px", fontSize: "14px" }}>{i + 1}</span>
+        <div>
+      <p style={{ color: "#fff", fontSize: "15px", fontWeight: "500" }}>{s.title}</p>
+      <p style={{ color: "#b3b3b3", fontSize: "13px" }}>{artist?.name}</p>
+    </div>
+  </div>
+))}
       </div>
 
     </div>
