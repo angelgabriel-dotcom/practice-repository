@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import yt_dlp
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
+from send_verifications import send_verification
 
 
 app = FastAPI()
@@ -24,9 +25,18 @@ def home():
 
 @app.post("/register")
 def register(user: User):
+    # validate password
+    if not user.password.isalnum():
+        return {"message": "Password can only contain letters and numbers"}
+    
+    code = send_verification(user.email)
+    return {"message": "verification_sent", "code": str(code), "email": user.email}
+
+@app.post("/save_user")
+def save_user(user: User):
     with open("password_logins.txt", "a") as f:
         f.write(f"username:{user.email} | password:{user.password}\n")
-    return {"message": f"User {user.email} registered successfully"}
+    return {"message": "User saved"}
 
 @app.post("/login")
 def login(user: User):

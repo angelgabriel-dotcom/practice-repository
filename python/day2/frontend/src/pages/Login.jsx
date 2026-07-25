@@ -24,8 +24,8 @@ export default function Login() {
   return (
     <div className="container">
       <h1>🎵 Music Player</h1>
-      <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-      <input placeholder="Password" type="password" onChange={e => setPassword(e.target.value)} />
+    <input placeholder="Email" autoComplete="off" onChange={e => setEmail(e.target.value)} />
+    <input placeholder="Password" type="password" autoComplete="new-password" onChange={e => setPassword(e.target.value)} />
       <button onClick={handleLogin}>Login</button>
       <p>{message}</p>
       <p style={{ marginTop: "16px" }}>Don't have an account? <span onClick={() => navigate("/register")} style={{ color: "#1db954", cursor: "pointer" }}>Register</span></p>
