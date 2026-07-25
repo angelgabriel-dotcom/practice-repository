@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 
 export default function Home() {
+  const [searchArtist, setSearchArtist] = useState(null)
   const [artists, setArtists] = useState([])
   const [search, setSearch] = useState("")
   const navigate = useNavigate()
@@ -12,6 +13,22 @@ export default function Home() {
       .then(data => setArtists(data))
   }, [])
 
+  const handleArtistSearch = async (e) => {
+  if (e.key === "Enter" && search.trim()) {
+    
+    const found = artists.find(a => a.name.toLowerCase() === search.toLowerCase())
+    if (found) {
+      navigate("/player", { state: { artist: found } })
+    } else {
+    
+      const res = await fetch(`http://localhost:8000/artist-search?name=${search}`)
+      const data = await res.json()
+      if (data.name) {
+        navigate("/player", { state: { artist: { name: data.name, image: data.image, creationDate: "", members: [], bio: data.bio } } })
+      }
+    }
+  }
+}
   const filtered = artists.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase())
   )
@@ -38,6 +55,7 @@ export default function Home() {
             className="search-bar"
             placeholder="What do you want to play?"
             onChange={e => setSearch(e.target.value)}
+            onKeyDown={handleArtistSearch}
           />
         </div>
 

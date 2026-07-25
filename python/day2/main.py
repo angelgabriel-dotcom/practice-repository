@@ -90,3 +90,25 @@ async def get_songs(artist: str):
         info = ydl.extract_info(f"ytsearch10:{artist}", download=False)
         songs = [{'title': e['title'], 'duration': e.get('duration', 0)} for e in info['entries']]
     return {"songs": songs}
+
+@app.get("/artist-search")
+async def artist_search(name: str):
+    api_key = "6655f51f5f278165d40174692082dec2"  # replace with your key
+    async with httpx.AsyncClient() as client:
+        res = await client.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist={name}&api_key={api_key}&format=json")
+        data = res.json()
+    
+        artist = data.get("artist", {})
+        image_url = ""
+        images = artist.get("image", [])
+    for img in images:
+        url = img.get("#text", "")
+    if url and img.get("size") in ["mega", "extralarge", "large"]:
+        image_url = url
+    
+    return {
+        "name": artist.get("name", name),
+        "image": image_url,
+        "bio": artist.get("bio", {}).get("summary", ""),
+        "listeners": artist.get("stats", {}).get("listeners", "")
+    }
