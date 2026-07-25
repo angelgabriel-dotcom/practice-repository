@@ -70,7 +70,20 @@ export default function Player() {
         <div>
           <p style={{ color: "#fff", fontSize: "13px", marginBottom: "8px" }}>Artist</p>
           <h1 style={{ color: "#fff", fontSize: "72px", fontWeight: "900", lineHeight: 1, marginBottom: "16px" }}>{artist?.name}</h1>
-          <p style={{ color: "#ffffffb3", fontSize: "14px" }}>Since {artist?.creationDate}</p>
+          <p style={{ color: "#ffffffb3", fontSize: "14px" }}> {artist?.creationDate}</p>
+          {artist?.members && artist.members.length > 0 && (
+         <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+         {artist.members.map((member, i) => (
+      <span key={i} style={{
+        background: "rgba(255,255,255,0.1)",
+        color: "#fff",
+        padding: "4px 12px",
+        borderRadius: "20px",
+        fontSize: "13px"
+         }}>{member}</span>
+          ))}
+         </div>
+        )}
         </div>
       </div>
 
