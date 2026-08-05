@@ -10,6 +10,10 @@ export default function Player() {
   const { setCurrentArtist, setAudioUrl } = useMusic()
   const [song, setSong] = useState("")
   const [songs, setSongs] = useState([])
+  const [lyrics, setLyrics] = useState("")
+  const [showLyrics, setShowLyrics] = useState(false)
+  const [currentSongName, setCurrentSongName] = useState("")
+
 
   useEffect(() => {
   fetch(`http://localhost:8000/songs?artist=${artist?.name}`)
@@ -29,13 +33,32 @@ export default function Player() {
     y.set(e.clientY - rect.top - rect.height / 2)
   }
 
-  const handlePlay = (songName) => {
-    setCurrentArtist(artist)
-    setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${songName}`)
-  }
+const handlePlay = async (songName) => {
+  if (songName === currentSongName) return  // ← stop if same song
+  setCurrentSongName(songName)
+  setCurrentArtist(artist)
+  setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${songName}`)
+  const cleanTitle = songName.replace(`${artist.name} - `, "").replace(/\(.*\)/g, "").trim()
+  const res = await fetch(`http://localhost:8000/lyrics?artist=${artist.name}&title=${cleanTitle}`)
+  const data = await res.json()
+  setLyrics(data.lyrics)
+  setShowLyrics(true)
+}
+
+    {showLyrics && lyrics && (
+      <div style={{ padding: "24px 40px", marginTop: "20px" }}>
+      <h2 style={{ color: "#fff", marginBottom: "16px" }}>Lyrics</h2>
+      <p style={{color: "red"}}>{showLyrics ? "SHOW" : "HIDE"} - {lyrics ? "HAS LYRICS" : "NO LYRICS"}</p>
+     <pre style={{ 
+      color: "#b3b3b3", 
+      fontSize: "15px", 
+      lineHeight: "1.8",
+      whiteSpace: "pre-wrap",
+      fontFamily: "inherit"
+    }}><p style={{color: "red"}}>{lyrics}</p></pre>
+     </div>
+    )}
   
-
-
   return (
     <div style={{ background: "#121212", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       

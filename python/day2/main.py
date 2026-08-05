@@ -76,9 +76,13 @@ def stream(song: str):
 
 @app.get("/artists")
 async def get_artists():
-    async with httpx.AsyncClient() as client:
-        res = await client.get("https://groupietrackers.herokuapp.com/api/artists")
-        return res.json()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get("https://groupietrackers.herokuapp.com/api/artists")
+            return res.json()
+    except Exception:
+        return []
+
 @app.get("/songs")
 async def get_songs(artist: str):
     ydl_opts = {
@@ -93,22 +97,27 @@ async def get_songs(artist: str):
 
 @app.get("/artist-search")
 async def artist_search(name: str):
-    api_key = "6655f51f5f278165d40174692082dec2"  # replace with your key
     async with httpx.AsyncClient() as client:
-        res = await client.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist={name}&api_key={api_key}&format=json")
+        res = await client.get(f"https://api.deezer.com/search/artist?q={name}")
         data = res.json()
     
-        artist = data.get("artist", {})
-        image_url = ""
-        images = artist.get("image", [])
-    for img in images:
-        url = img.get("#text", "")
-    if url and img.get("size") in ["mega", "extralarge", "large"]:
-        image_url = url
+    artists = data.get("data", [])
+    if not artists:
+        return {"name": name, "image": "", "bio": "", "fans": 0}
     
+    artist = artists[0]
     return {
         "name": artist.get("name", name),
-        "image": image_url,
-        "bio": artist.get("bio", {}).get("summary", ""),
-        "listeners": artist.get("stats", {}).get("listeners", "")
+        "image": artist.get("picture_xl", ""),
+        "fans": artist.get("nb_fan", 0),
+    }
+
+@app.get("/lyrics")
+async def get_lyrics(artist: str, title: str):
+    async with httpx.AsyncClient() as client:
+        res = await client.get(f"https://lrclib.net/api/get?artist_name={artist}&track_name={title}")
+        data = res.json()
+    return {
+        "lyrics": data.get("plainLyrics", "Lyrics not found"),
+        "synced": data.get("syncedLyrics", "")
     }
