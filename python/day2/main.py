@@ -114,10 +114,24 @@ async def artist_search(name: str):
 
 @app.get("/lyrics")
 async def get_lyrics(artist: str, title: str):
-    async with httpx.AsyncClient() as client:
-        res = await client.get(f"https://lrclib.net/api/get?artist_name={artist}&track_name={title}")
-        data = res.json()
-    return {
-        "lyrics": data.get("plainLyrics", "Lyrics not found"),
-        "synced": data.get("syncedLyrics", "")
-    }
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            # try lyrics.ovh first
+            res = await client.get(f"https://api.lyrics.ovh/v1/{artist}/{title}")
+            data = res.json()
+            if "lyrics" in data:
+                return {"lyrics": data["lyrics"], "synced": ""}
+    except Exception:
+        pass
+    
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            # try lrclib as fallback
+            res = await client.get(f"https://lrclib.net/api/get?artist_name={artist}&track_name={title}")
+            data = res.json()
+            return {
+                "lyrics": data.get("plainLyrics", "Lyrics not found"),
+                "synced": data.get("syncedLyrics", "")
+            }
+    except Exception:
+        return {"lyrics": "Lyrics not available", "synced": ""}

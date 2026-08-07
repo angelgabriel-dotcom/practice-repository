@@ -15,6 +15,7 @@ export default function Player() {
   const [currentSongName, setCurrentSongName] = useState("")
 
 
+
   useEffect(() => {
   fetch(`http://localhost:8000/songs?artist=${artist?.name}`)
     .then(res => res.json())
@@ -35,10 +36,19 @@ export default function Player() {
 
 const handlePlay = async (songName) => {
   if (songName === currentSongName) return  // ← stop if same song
+  
   setCurrentSongName(songName)
   setCurrentArtist(artist)
   setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${songName}`)
-  const cleanTitle = songName.replace(`${artist.name} - `, "").replace(/\(.*\)/g, "").trim()
+  const cleanTitle = songName
+  .replace(`${artist.name} - `, "")
+  .replace(`${artist.name}`, "")
+  .replace(/\(Official.*?\)/gi, "")
+  .replace(/\[Official.*?\]/gi, "")
+  .replace(/ft\..*$/gi, "")
+  .replace(/-/g, "")
+  .trim()
+  
   const res = await fetch(`http://localhost:8000/lyrics?artist=${artist.name}&title=${cleanTitle}`)
   const data = await res.json()
   setLyrics(data.lyrics)
