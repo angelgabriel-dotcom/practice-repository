@@ -6,12 +6,30 @@ export default function Home() {
   const [artists, setArtists] = useState([])
   const [search, setSearch] = useState("")
   const navigate = useNavigate()
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
-  useEffect(() => {
-    fetch("http://localhost:8000/artists")
+useEffect(() => {
+  fetch("http://localhost:8000/artists")
+    .then(res => res.json())
+    .then(data => setArtists(data))
+}, [])
+
+useEffect(() => {
+  if (!search.trim()) {
+    setSuggestions([])
+    return
+  }
+
+  const timeoutId = setTimeout(() => {
+    fetch(`http://localhost:8000/artist-search-live?name=${encodeURIComponent(search)}`)
       .then(res => res.json())
-      .then(data => setArtists(data))
-  }, [])
+      .then(data => setSuggestions(data))
+      .catch(() => setSuggestions([]))
+  }, 250)
+
+  return () => clearTimeout(timeoutId)
+}, [search])
 
   const handleArtistSearch = async (e) => {
   if (e.key === "Enter" && search.trim()) {
@@ -50,14 +68,55 @@ export default function Home() {
       {/* Main */}
       <div className="main">
         {/* Topbar */}
-        <div className="topbar">
-          <input
-            className="search-bar"
-            placeholder="What do you want to play?"
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={handleArtistSearch}
-          />
+       <div className="topbar" style={{ position: "relative" }}>
+  <input
+    className="search-bar"
+    placeholder="What do you want to play?"
+    value={search}
+    onChange={e => {
+      setSearch(e.target.value)
+      setShowSuggestions(true)
+    }}
+    onKeyDown={handleArtistSearch}
+    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+  />
+
+  {showSuggestions && suggestions.length > 0 && (
+    <div style={{
+      position: "absolute",
+      top: "48px",
+      left: 0,
+      width: "300px",
+      background: "#282828",
+      borderRadius: "8px",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+      zIndex: 200,
+      overflow: "hidden"
+    }}>
+      {suggestions.map((s, i) => (
+        <div key={i}
+          onClick={() => {
+            setShowSuggestions(false)
+            setSearch(s.name)
+            navigate("/player", { state: { artist: { ...s, creationDate: "", members: [], bio: "" } } })
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            padding: "10px 12px",
+            cursor: "pointer"
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "#3a3a3a"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        >
+          <img src={s.image} alt={s.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+          <span style={{ color: "#fff", fontSize: "14px" }}>{s.name}</span>
         </div>
+      ))}
+     </div>
+      )}
+    </div>
 
         {/* Artists Section */}
         <div className="section">

@@ -4,6 +4,7 @@ anyio==4.14.2
 attrs==23.2.0
 Babel==2.10.3
 bcc==0.29.1
+beautifulsoup4==4.15.0
 blinker==1.7.0
 Brlapi==0.8.5
 certifi==2023.11.17
@@ -61,12 +62,15 @@ python-debian==0.1.49+ubuntu2
 pytz==2024.1
 pyxdg==0.28
 PyYAML==6.0.1
+RapidFuzz==3.14.5
 requests==2.31.0
 rich==13.7.1
 setuptools==68.1.2
 six==1.16.0
+soupsieve==2.9.2
 ssh-import-id==5.11
 starlette==1.4.1
+syncedlyrics==1.0.1
 systemd-python==235
 typing-inspection==0.4.2
 typing_extensions==4.16.0

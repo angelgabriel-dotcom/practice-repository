@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react"
 import { useMusic } from "../music_context"
+import { cleanSongTitle } from "../utils"
 
 export default function BottomPlayer() {
   const { currentArtist, audioUrl } = useMusic()
   const [isLoading, setIsLoading] = useState(true)
-  const [showLyrics, setShowLyrics] = useState(false)
-  const [lyrics, setLyrics] = useState("")
   const [syncedLyrics, setSyncedLyrics] = useState([])
+  const [lyrics, setLyrics] = useState("")
+  const [showLyrics, setShowLyrics] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const audioRef = useRef(null)
 
@@ -17,16 +18,9 @@ export default function BottomPlayer() {
   useEffect(() => {
     if (audioUrl && currentArtist) {
       const songName = audioUrl.split("song=")[1]?.replace(/%20/g, " ") || ""
-      const cleanTitle = songName
-        .replace(currentArtist.name, "")
-        .replace(/\(Official.*?\)/gi, "")
-        .replace(/\[Official.*?\]/gi, "")
-        .replace(/Official.*?Video/gi, "")
-        .replace(/Official.*?Audio/gi, "")
-        .replace(/ft\..*$/gi, "")
-        .replace(/-/g, "")
-        .trim()
+      const cleanTitle = cleanSongTitle(songName, currentArtist.name)
 
+      console.log("Fetching lyrics for:", currentArtist.name, cleanTitle)
       fetch(`http://localhost:8000/lyrics?artist=${currentArtist.name}&title=${cleanTitle}`)
         .then(res => res.json())
         .then(data => {
@@ -100,7 +94,18 @@ export default function BottomPlayer() {
               lineHeight: "1.8",
               transition: "all 0.3s ease"
             }}>{line.text}</p>
-          )) : <pre style={{ color: "#b3b3b3", fontSize: "14px", lineHeight: "1.8", whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{lyrics}</pre>}
+          )) : (
+            <>
+              {lyrics && (
+                <p style={{ color: "#727272", fontSize: "12px", marginBottom: "12px", fontStyle: "italic" }}>
+                  Synced lyrics not available for this track
+                </p>
+              )}
+              <pre style={{ color: "#b3b3b3", fontSize: "14px", lineHeight: "1.8", whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
+                {lyrics}
+              </pre>
+            </>
+          )}
         </div>
       )}
 

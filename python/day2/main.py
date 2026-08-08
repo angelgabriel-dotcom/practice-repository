@@ -4,6 +4,10 @@ import yt_dlp
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from send_verifications import send_verification
+from bs4 import BeautifulSoup
+import os
+import syncedlyrics
+import asyncio
 
 
 app = FastAPI()
@@ -112,26 +116,108 @@ async def artist_search(name: str):
         "fans": artist.get("nb_fan", 0),
     }
 
+@app.get("/artist-search-live")
+async def artist_search_live(name: str):
+    if not name.strip():
+        return []
+
+    async with httpx.AsyncClient() as client:
+        res = await client.get(f"https://api.deezer.com/search/artist?q={name}")
+        data = res.json()
+
+    artists = data.get("data", [])[:6]
+    return [
+        {
+            "name": a.get("name", ""),
+            "image": a.get("picture_medium", ""),
+            "fans": a.get("nb_fan", 0),
+        }
+        for a in artists
+    ]
+
+
+GENIUS_TOKEN = os.environ.get("XISv1wv-jn8yot-VaetyHZEJAXsg7OKu1aUtP2NUxrtUFcaUrEqoUDIZIbf-djcR")
+
+async def fetch_synced_lyrics(artist: str, title: str):
+    def _search():
+        return syncedlyrics.search(f"{artist} {title}")
+
+    lrc = await asyncio.to_thread(_search)
+    if lrc:
+        plain_lines = [
+            line.split("]", 1)[1].strip()
+            for line in lrc.split("\n")
+            if "]" in line
+        ]
+        plain = "\n".join(plain_lines).strip()
+        return {"lyrics": plain, "synced": lrc}
+    return None
+
+async def fetch_genius_lyrics(artist: str, title: str):
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        search_res = await client.get(
+            "https://api.genius.com/search",
+            params={"q": f"{artist} {title}"},
+            headers={"Authorization": f"Bearer {GENIUS_TOKEN}"}
+        )
+        search_data = search_res.json()
+        hits = search_data.get("response", {}).get("hits", [])
+        if not hits:
+            return None
+
+        song_url = hits[0]["result"]["url"]
+
+        page_res = await client.get(song_url)
+        soup = BeautifulSoup(page_res.text, "html.parser")
+
+        containers = soup.select("div[data-lyrics-container='true']")
+        if not containers:
+            return None
+
+        lyrics_lines = []
+        for container in containers:
+            lyrics_lines.append(container.get_text(separator="\n"))
+
+        lyrics = "\n".join(lyrics_lines).strip()
+        return lyrics if lyrics else None
+
 @app.get("/lyrics")
 async def get_lyrics(artist: str, title: str):
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            # try lyrics.ovh first
-            res = await client.get(f"https://api.lyrics.ovh/v1/{artist}/{title}")
-            data = res.json()
-            if "lyrics" in data:
-                return {"lyrics": data["lyrics"], "synced": ""}
-    except Exception:
-        pass
-    
+        result = await fetch_synced_lyrics(artist, title)
+        if result:
+            return result
+    except Exception as e:
+        print(f"syncedlyrics failed: {e}")
+
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
-            # try lrclib as fallback
-            res = await client.get(f"https://lrclib.net/api/get?artist_name={artist}&track_name={title}")
+            res = await client.get(
+                "https://lrclib.net/api/get",
+                params={"artist_name": artist, "track_name": title}
+            )
+            if res.status_code == 200:
+                data = res.json()
+                plain = data.get("plainLyrics")
+                if plain:
+                    return {"lyrics": plain, "synced": data.get("syncedLyrics", "")}
+    except Exception as e:
+        print(f"lrclib failed: {e}")
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            res = await client.get(f"https://api.lyrics.ovh/v1/{artist}/{title}")
             data = res.json()
-            return {
-                "lyrics": data.get("plainLyrics", "Lyrics not found"),
-                "synced": data.get("syncedLyrics", "")
-            }
-    except Exception:
-        return {"lyrics": "Lyrics not available", "synced": ""}
+            if "lyrics" in data and data["lyrics"].strip():
+                return {"lyrics": data["lyrics"], "synced": ""}
+    except Exception as e:
+        print(f"lyrics.ovh failed: {e}")
+
+    try:
+        genius_lyrics = await fetch_genius_lyrics(artist, title)
+        if genius_lyrics:
+            return {"lyrics": genius_lyrics, "synced": ""}
+    except Exception as e:
+        print(f"genius failed: {e}")
+
+    return {"lyrics": None, "synced": "", "found": False}

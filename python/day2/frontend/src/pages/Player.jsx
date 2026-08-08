@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { useState, useEffect} from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
 import { useMusic } from "../music_context"
+import { cleanSongTitle } from "../utils"
 
 export default function Player() {
   const { state } = useLocation()
@@ -35,39 +36,13 @@ export default function Player() {
   }
 
 const handlePlay = async (songName) => {
-  if (songName === currentSongName) return  // ← stop if same song
+  const cleanTitle = cleanSongTitle(songName, artist.name) 
   
   setCurrentSongName(songName)
   setCurrentArtist(artist)
   setAudioUrl(`http://localhost:8000/stream?song=${artist.name} ${songName}`)
-  const cleanTitle = songName
-  .replace(`${artist.name} - `, "")
-  .replace(`${artist.name}`, "")
-  .replace(/\(Official.*?\)/gi, "")
-  .replace(/\[Official.*?\]/gi, "")
-  .replace(/ft\..*$/gi, "")
-  .replace(/-/g, "")
-  .trim()
   
-  const res = await fetch(`http://localhost:8000/lyrics?artist=${artist.name}&title=${cleanTitle}`)
-  const data = await res.json()
-  setLyrics(data.lyrics)
-  setShowLyrics(true)
 }
-
-    {showLyrics && lyrics && (
-      <div style={{ padding: "24px 40px", marginTop: "20px" }}>
-      <h2 style={{ color: "#fff", marginBottom: "16px" }}>Lyrics</h2>
-      <p style={{color: "red"}}>{showLyrics ? "SHOW" : "HIDE"} - {lyrics ? "HAS LYRICS" : "NO LYRICS"}</p>
-     <pre style={{ 
-      color: "#b3b3b3", 
-      fontSize: "15px", 
-      lineHeight: "1.8",
-      whiteSpace: "pre-wrap",
-      fontFamily: "inherit"
-    }}><p style={{color: "red"}}>{lyrics}</p></pre>
-     </div>
-    )}
   
   return (
     <div style={{ background: "#121212", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
