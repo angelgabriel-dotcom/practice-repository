@@ -71,7 +71,7 @@ useEffect(() => {
        <div className="topbar" style={{ position: "relative" }}>
   <input
     className="search-bar"
-    placeholder="What do you want to play?"
+    placeholder="search for your favourite artist and songs!"
     value={search}
     onChange={e => {
       setSearch(e.target.value)
@@ -94,26 +94,27 @@ useEffect(() => {
       overflow: "hidden"
     }}>
       {suggestions.map((s, i) => (
-        <div key={i}
-          onClick={() => {
-            setShowSuggestions(false)
-            setSearch(s.name)
-            navigate("/player", { state: { artist: { ...s, creationDate: "", members: [], bio: "" } } })
-          }}
+      <div key={i}
+      onMouseDown={(e) => {
+      e.preventDefault()
+      setShowSuggestions(false)
+      setSearch(s.name)
+      navigate("/player", { state: { artist: { ...s, creationDate: "", members: [], bio: "" } } })
+       }}
           style={{
-            display: "flex",
+           display: "flex",
             alignItems: "center",
             gap: "12px",
-            padding: "10px 12px",
-            cursor: "pointer"
-          }}
+           padding: "10px 12px",
+          cursor: "pointer"
+      }}
           onMouseEnter={e => e.currentTarget.style.background = "#3a3a3a"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-        >
-          <img src={s.image} alt={s.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
-          <span style={{ color: "#fff", fontSize: "14px" }}>{s.name}</span>
-        </div>
-      ))}
+         >
+         <img src={s.image} alt={s.name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+         <span style={{ color: "#fff", fontSize: "14px" }}>{s.name}</span>
+  </div>
+))}
      </div>
       )}
     </div>

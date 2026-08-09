@@ -3,49 +3,49 @@ import { useMusic } from "../music_context"
 import { cleanSongTitle } from "../utils"
 
 export default function BottomPlayer() {
-  const { currentArtist, audioUrl } = useMusic()
+  const { currentArtist, audioUrl, currentSongTitle } = useMusic()
   const [isLoading, setIsLoading] = useState(true)
   const [syncedLyrics, setSyncedLyrics] = useState([])
   const [lyrics, setLyrics] = useState("")
   const [showLyrics, setShowLyrics] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const audioRef = useRef(null)
+  
 
   useEffect(() => {
     setIsLoading(true)
   }, [audioUrl])
 
-  useEffect(() => {
-    if (audioUrl && currentArtist) {
-      const songName = audioUrl.split("song=")[1]?.replace(/%20/g, " ") || ""
-      const cleanTitle = cleanSongTitle(songName, currentArtist.name)
+useEffect(() => {
+  if (audioUrl && currentArtist && currentSongTitle) {
+    const cleanTitle = cleanSongTitle(currentSongTitle, currentArtist.name)
 
-      console.log("Fetching lyrics for:", currentArtist.name, cleanTitle)
-      fetch(`http://localhost:8000/lyrics?artist=${currentArtist.name}&title=${cleanTitle}`)
-        .then(res => res.json())
-        .then(data => {
-          setLyrics(data.lyrics || "")
-          if (data.synced) {
-            const lines = data.synced.split("\n").map(line => {
-              const match = line.match(/\[(\d+):(\d+\.\d+)\](.*)/)
-              if (match) {
-                const minutes = parseInt(match[1])
-                const seconds = parseFloat(match[2])
-                return { time: minutes * 60 + seconds, text: match[3].trim() }
-              }
-              return null
-            }).filter(Boolean)
-            setSyncedLyrics(lines)
-          } else {
-            setSyncedLyrics([])
-          }
-        })
-        .catch(() => {
-          setLyrics("Lyrics not available")
+    console.log("Fetching lyrics for:", currentArtist.name, cleanTitle)
+    fetch(`http://localhost:8000/lyrics?artist=${currentArtist.name}&title=${cleanTitle}`)
+      .then(res => res.json())
+      .then(data => {
+        setLyrics(data.lyrics || "")
+        if (data.synced) {
+          const lines = data.synced.split("\n").map(line => {
+            const match = line.match(/\[(\d+):(\d+\.\d+)\](.*)/)
+            if (match) {
+              const minutes = parseInt(match[1])
+              const seconds = parseFloat(match[2])
+              return { time: minutes * 60 + seconds, text: match[3].trim() }
+            }
+            return null
+          }).filter(Boolean)
+          setSyncedLyrics(lines)
+        } else {
           setSyncedLyrics([])
-        })
-    }
-  }, [audioUrl])
+        }
+      })
+      .catch(() => {
+        setLyrics("Lyrics not available")
+        setSyncedLyrics([])
+      })
+  }
+}, [audioUrl])
 
   const activeLine = syncedLyrics.reduce((acc, line, i) => {
     if (line.time <= currentTime) return i

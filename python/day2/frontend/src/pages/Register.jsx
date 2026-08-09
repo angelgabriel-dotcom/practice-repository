@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom"
 export default function Register() {
 const [step, setStep] = useState("register")
 const [verifyCode, setVerifyCode] = useState("")
-const [serverCode, setServerCode] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
@@ -19,7 +18,6 @@ const handleRegister = async () => {
   })
   const data = await res.json()
   if (data.message === "verification_sent") {
-    setServerCode(data.code)
     setStep("verify")
   } else {
     setMessage(data.message)
@@ -27,17 +25,17 @@ const handleRegister = async () => {
 }
 
 const handleVerify = async () => {
-  if (verifyCode === serverCode) {
-    // save to file
-    await fetch("http://localhost:8000/save_user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
+  const res = await fetch("http://localhost:8000/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, code: verifyCode })
+  })
+  const data = await res.json()
+  if (data.message === "Account created successfully") {
     setMessage("Account created successfully! Redirecting...")
     setTimeout(() => navigate("/"), 1500)
   } else {
-    setMessage("Wrong code! Try again.")
+    setMessage(data.message)
   }
 }
 

@@ -8,6 +8,17 @@ from bs4 import BeautifulSoup
 import os
 import syncedlyrics
 import asyncio
+from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
+from fastapi import Request
+from fastapi.responses import StreamingResponse
+import httpx
+from passlib.context import CryptContext
+import jwt
+import os
+from datetime import datetime, timedelta
+from fastapi import Header, HTTPException
+
 
 
 app = FastAPI()
@@ -19,36 +30,88 @@ app.add_middleware(
 
 )
 
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-this")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_HOURS = 24 * 7  # 1 week
+
+def create_token(email: str):
+    payload = {
+        "sub": email,
+        "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
 class User(BaseModel):
     email: str
     password: str
 
-@app.get("/")
-def home():
-    return {"message": "Welcome to the Music Player API"}
+
+verification_codes = {}
 
 @app.post("/register")
 def register(user: User):
-    # validate password
     if not user.password.isalnum():
         return {"message": "Password can only contain letters and numbers"}
-    
-    code = send_verification(user.email)
-    return {"message": "verification_sent", "code": str(code), "email": user.email}
 
+    code = send_verification(user.email)
+    verification_codes[user.email] = {
+        "code": str(code),
+        "password": user.password,
+        "expires": datetime.utcnow() + timedelta(minutes=10)
+    }
+    return {"message": "verification_sent", "email": user.email}
+
+
+class VerifyRequest(BaseModel):
+    email: str
+    code: str
+
+@app.post("/verify")
+def verify(req: VerifyRequest):
+    entry = verification_codes.get(req.email)
+    if not entry:
+        return {"message": "No pending verification for this email"}
+    if datetime.utcnow() > entry["expires"]:
+        del verification_codes[req.email]
+        return {"message": "Code expired, please register again"}
+    if req.code != entry["code"]:
+        return {"message": "Wrong code"}
+
+    hashed = pwd_context.hash(entry["password"])
+    with open("password_logins.txt", "a") as f:
+        f.write(f"username:{req.email}|password_hash:{hashed}\n")
+
+    del verification_codes[req.email]
+    return {"message": "Account created successfully"}
+    
 @app.post("/save_user")
 def save_user(user: User):
+    hashed = pwd_context.hash(user.password)
     with open("password_logins.txt", "a") as f:
-        f.write(f"username:{user.email} | password:{user.password}\n")
+        f.write(f"username:{user.email}|password_hash:{hashed}\n")
     return {"message": "User saved"}
+
 
 @app.post("/login")
 def login(user: User):
     with open("password_logins.txt", "r") as f:
         for line in f:
-            if f"username:{user.email}" in line and f"password:{user.password}" in line:
-                return {"message": "Login successful"}
+            line = line.strip()
+            if not line:
+                continue
+            parts = dict(p.split(":", 1) for p in line.split("|"))
+            if parts.get("username") == user.email:
+                if pwd_context.verify(user.password, parts.get("password_hash", "")):
+                    token = create_token(user.email)
+                    return {"message": "Login successful", "token": token, "email": user.email}
+                else:
+                    return {"message": "Invalid credentials"}
     return {"message": "Invalid credentials"}
+
 
 @app.get("/search")
 def search(song: str):
@@ -62,22 +125,55 @@ def search(song: str):
         info = ydl.extract_info(f"ytsearch1:{song}", download=True)
         filename = ydl.prepare_filename(info['entries'][0])
     return {"message": f"Downloaded {song}", "filename": filename}
-from fastapi.responses import FileResponse
 
 @app.get("/stream")
-def stream(song: str):
+async def stream(video_id: str, request: Request):
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': f'{song}.%(ext)s',
         'quiet': True,
         'js_runtimes': {'deno': {'path': '/home/student/.deno/bin/deno'}},
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch1:{song}", download=True)
-        filename = ydl.prepare_filename(info['entries'][0])
-    
-    return FileResponse(filename, media_type="audio/webm")
+        info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+        audio_url = info['url']
+        ext = info.get('ext', 'webm')
 
+    media_type = "audio/webm" if ext == "webm" else f"audio/{ext}"
+    range_header = request.headers.get("range")
+
+    client = httpx.AsyncClient(timeout=httpx.Timeout(None))
+
+    upstream_headers = {}
+    if range_header:
+        upstream_headers["Range"] = range_header
+
+    upstream_req = client.build_request("GET", audio_url, headers=upstream_headers)
+    upstream_resp = await client.send(upstream_req, stream=True)
+
+    headers = {
+        "Accept-Ranges": "bytes",
+    }
+    if "content-length" in upstream_resp.headers:
+        headers["Content-Length"] = upstream_resp.headers["content-length"]
+    if "content-range" in upstream_resp.headers:
+        headers["Content-Range"] = upstream_resp.headers["content-range"]
+
+    status_code = upstream_resp.status_code
+
+    async def proxy():
+        try:
+            async for chunk in upstream_resp.aiter_bytes(chunk_size=65536):
+                yield chunk
+        finally:
+            await upstream_resp.aclose()
+            await client.aclose()
+
+    return StreamingResponse(
+        proxy(),
+        status_code=status_code,
+        media_type=media_type,
+        headers=headers,
+    )
 @app.get("/artists")
 async def get_artists():
     try:
@@ -96,7 +192,10 @@ async def get_songs(artist: str):
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(f"ytsearch10:{artist}", download=False)
-        songs = [{'title': e['title'], 'duration': e.get('duration', 0)} for e in info['entries']]
+        songs = [
+            {'title': e['title'], 'duration': e.get('duration', 0), 'id': e['id']}
+            for e in info['entries']
+        ]
     return {"songs": songs}
 
 @app.get("/artist-search")
@@ -221,3 +320,15 @@ async def get_lyrics(artist: str, title: str):
         print(f"genius failed: {e}")
 
     return {"lyrics": None, "synced": "", "found": False}
+
+def get_current_user(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload["sub"]
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
