@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
 import { useAuth } from "../auth_context"
 
 export default function Login() {
@@ -25,13 +26,24 @@ export default function Login() {
   }
 
   return (
-    <div className="container">
+    <motion.div
+      className="container"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <h1>🎵 Music Player</h1>
       <input placeholder="Email" autoComplete="off" onChange={e => setEmail(e.target.value)} />
       <input placeholder="Password" type="password" autoComplete="new-password" onChange={e => setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Login</button>
+      <motion.button
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={handleLogin}
+      >
+        Login
+      </motion.button>
       <p>{message}</p>
       <p style={{ marginTop: "16px" }}>Don't have an account? <span onClick={() => navigate("/register")} style={{ color: "#1db954", cursor: "pointer" }}>Register</span></p>
-    </div>
+    </motion.div>
   )
 }
