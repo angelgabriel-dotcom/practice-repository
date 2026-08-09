@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "../auth_context"
+import { useMusic } from "../music_context"
+
+
 
 export default function Home() {
   const [searchArtist, setSearchArtist] = useState(null)
@@ -8,6 +12,18 @@ export default function Home() {
   const navigate = useNavigate()
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const { email, logout } = useAuth()
+  const { setAudioUrl, setCurrentArtist, setCurrentSongTitle } = useMusic()
+
+  
+
+const handleLogout = () => {
+  setAudioUrl("")
+  setCurrentArtist(null)
+  setCurrentSongTitle("")
+  logout()
+  navigate("/")
+}
 
 useEffect(() => {
   fetch("http://localhost:8000/artists")
@@ -54,16 +70,35 @@ useEffect(() => {
   return (
     <div className="layout">
       {/* Sidebar */}
-      <div className="sidebar">
-        <div>
-          <h2>🎵 SoundWave</h2>
-        </div>
-        <div>
-          <h2>Your Library</h2>
-          <p>Create your first playlist</p>
-          <p style={{ marginTop: "16px" }}>Browse artists and find music you love</p>
-        </div>
-      </div>
+     <div className="sidebar">
+  <div>
+    <h2>🎵 SoundWave</h2>
+  </div>
+  <div>
+    <h2>Your Library</h2>
+    <p>Create your first playlist</p>
+    <p style={{ marginTop: "16px" }}>Browse artists and find music you love</p>
+  </div>
+
+  <div style={{ marginTop: "auto", paddingTop: "16px", borderTop: "1px solid #282828" }}>
+    <p style={{ color: "#b3b3b3", fontSize: "13px", marginBottom: "8px" }}>{email}</p>
+    <button
+      onClick={handleLogout}
+      style={{
+        background: "transparent",
+        border: "1px solid #535353",
+        color: "#fff",
+        borderRadius: "20px",
+        padding: "8px 16px",
+        cursor: "pointer",
+        fontSize: "13px",
+        width: "auto"
+      }}
+    >
+      Log out
+    </button>
+  </div>
+</div>
 
       {/* Main */}
       <div className="main">
