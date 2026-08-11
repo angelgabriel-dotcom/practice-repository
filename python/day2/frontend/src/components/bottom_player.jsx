@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useMusic } from "../music_context"
-import { cleanSongTitle } from "../utils"
+import { extractArtistAndTitle } from "../utils"
+import FullScreenLyrics from "./fullscreenlyrics"
 
 export default function BottomPlayer() {
   const { currentArtist, audioUrl, currentSongTitle } = useMusic()
@@ -10,20 +11,25 @@ export default function BottomPlayer() {
   const [showLyrics, setShowLyrics] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const audioRef = useRef(null)
+  const [hasEnded, setHasEnded] = useState(false)
+  const [fullScreenOpen, setFullScreenOpen] = useState(false)
   
 
   useEffect(() => {
-    setIsLoading(true)
-  }, [audioUrl])
+  setIsLoading(true)
+  setHasEnded(false)
+}, [audioUrl])
 
 useEffect(() => {
   if (audioUrl && currentArtist && currentSongTitle) {
-    const cleanTitle = cleanSongTitle(currentSongTitle, currentArtist.name)
+    let cancelled = false
+    const { artist: realArtist, title: cleanTitle } = extractArtistAndTitle(currentSongTitle, currentArtist.name)
 
-    console.log("Fetching lyrics for:", currentArtist.name, cleanTitle)
-    fetch(`http://localhost:8000/lyrics?artist=${currentArtist.name}&title=${cleanTitle}`)
+    console.log("Fetching lyrics for:", realArtist, cleanTitle)
+    fetch(`http://localhost:8000/lyrics?artist=${realArtist}&title=${cleanTitle}`)
       .then(res => res.json())
       .then(data => {
+        if (cancelled) return
         setLyrics(data.lyrics || "")
         if (data.synced) {
           const lines = data.synced.split("\n").map(line => {
@@ -41,11 +47,31 @@ useEffect(() => {
         }
       })
       .catch(() => {
+        if (cancelled) return
         setLyrics("Lyrics not available")
         setSyncedLyrics([])
       })
+
+    return () => {
+      cancelled = true
+    }
   }
 }, [audioUrl])
+
+useEffect(() => {
+  let rafId
+
+  const updateTime = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime)
+    }
+    rafId = requestAnimationFrame(updateTime)
+  }
+
+  rafId = requestAnimationFrame(updateTime)
+
+  return () => cancelAnimationFrame(rafId)
+}, [])
 
   const activeLine = syncedLyrics.reduce((acc, line, i) => {
     if (line.time <= currentTime) return i
@@ -127,37 +153,45 @@ useEffect(() => {
               <img src={currentArtist.image} alt={currentArtist.name}
                 style={{ width: "56px", height: "56px", borderRadius: "4px", objectFit: "cover" }} />
               <div>
-                <p style={{ color: "#fff", fontSize: "14px", fontWeight: "600" }}>{currentArtist.name}</p>
-                <p style={{ color: isLoading ? "#1db954" : "#b3b3b3", fontSize: "12px" }}>
-                  {isLoading ? "⏳ Loading..." : "Now Playing"}
-                </p>
+                <p style={{ color: isLoading ? "#1db954" : hasEnded ? "#b3b3b3" : "#1db954", fontSize: "12px" }}>
+                 {isLoading ? "⏳ Loading..." : hasEnded ? "Finished" : `${currentArtist.name} - ${currentSongTitle}`}
+              </p>
               </div>
             </>
           )}
         </div>
 
         <audio
-          ref={audioRef}
-          controls
-          autoPlay
-          src={audioUrl}
-          onCanPlay={() => setIsLoading(false)}
-          onWaiting={() => setIsLoading(true)}
-          onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
-          style={{ flex: 1, height: "40px" }}
-        />
+         ref={audioRef}
+         controls
+         autoPlay
+         src={audioUrl}
+         onCanPlay={() => setIsLoading(false)}
+         onWaiting={() => setIsLoading(true)}
+         onEnded={() => setHasEnded(true)}
+         style={{ flex: 1, height: "40px" }}
+      />
 
-        <button onClick={() => setShowLyrics(!showLyrics)} style={{
-          background: showLyrics ? "#1db954" : "transparent",
-          border: "1px solid #535353",
-          color: "#fff",
-          borderRadius: "4px",
-          padding: "8px 12px",
-          cursor: "pointer",
-          fontSize: "16px",
-          width: "auto"
-        }}>🎤</button>
+        <button onClick={() => setFullScreenOpen(true)} style={{
+        background: "transparent",
+        border: "1px solid #535353",
+        color: "#fff",
+        borderRadius: "4px",
+        padding: "8px 12px",
+        cursor: "pointer",
+        fontSize: "16px",
+        width: "auto"
+      }}>🎤</button>
       </div>
+      <FullScreenLyrics
+       isOpen={fullScreenOpen}
+       onClose={() => setFullScreenOpen(false)}
+       currentArtist={currentArtist}
+       currentSongTitle={currentSongTitle}
+       lyrics={lyrics}
+       syncedLyrics={syncedLyrics}
+       activeLine={activeLine}
+      />
     </>
   )
 }

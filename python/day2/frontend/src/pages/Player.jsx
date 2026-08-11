@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { motion, useMotionValue, useTransform } from "framer-motion"
 import { useMusic } from "../music_context"
-import { cleanSongTitle } from "../utils"
+import { extractArtistAndTitle } from "../utils"
 
 export default function Player() {
   const { state } = useLocation()
@@ -29,19 +29,19 @@ export default function Player() {
     y.set(e.clientY - rect.top - rect.height / 2)
   }
 
-  const handlePlay = async (song) => {
-    if (song.title === currentSongName) return
+const handlePlay = async (song) => {
+  if (song.title === currentSongName) return
 
-    setCurrentSongName(song.title)
-    setCurrentArtist(artist)
-    setCurrentSongTitle(song.title)
-    setAudioUrl(`http://localhost:8000/stream?video_id=${song.id}`)
+  setCurrentSongName(song.title)
+  setCurrentArtist(artist)
+  setCurrentSongTitle(song.title)
+  setAudioUrl(`http://localhost:8000/stream?video_id=${song.id}`)
 
-    const cleanTitle = cleanSongTitle(song.title, artist.name)
+  const { artist: realArtist, title: cleanTitle } = extractArtistAndTitle(song.title, artist.name)
 
-    const res = await fetch(`http://localhost:8000/lyrics?artist=${artist.name}&title=${cleanTitle}`)
-    const data = await res.json()
-  }
+  const res = await fetch(`http://localhost:8000/lyrics?artist=${realArtist}&title=${cleanTitle}`)
+  const data = await res.json()
+}
 
   return (
     <div style={{ background: "#121212", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
