@@ -1,19 +1,27 @@
-import random
 import smtplib
+import random
+import os
+from email.mime.text import MIMEText
 
+def send_verification(to_email: str):
+    sender = os.environ.get("GMAIL_SENDER")
+    app_password = os.environ.get("GMAIL_APP_PASSWORD")
 
-green  = "\033[1;4;32m"
-reset  = "\033[0m"
+    if not sender or not app_password:
+        raise RuntimeError("GMAIL_SENDER or GMAIL_APP_PASSWORD environment variable not set")
 
-def send_verification(email):
     code = random.randint(100000, 999999)
-    sender = "jadeliam53@gmail.com"
-    app_password = "vgll mqvj jswh rixn"
 
-    message = f"subject: Verificaton Code\n\n Your Code is: {code}"
+    subject = "Your Verification Code"
+    body = f"Your verification code is: {code}"
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465)as server:
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = to_email
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(sender, app_password)
-        server.sendmail(sender, email, message)
-    print(f"{green}verification code sent to {email}!{reset}")
+        server.sendmail(sender, to_email, msg.as_string())
+
     return code
